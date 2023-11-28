@@ -1,6 +1,6 @@
 {
   "domain": "gree",
-  "name": "Gree Central Climate",
+  "name": "GreeCentralClimate",
   "version": "0.1.0",
   "config_flow": false,
   "documentation": "https://github.com/cyanogenic/Ha-GreeCentralClimate",
