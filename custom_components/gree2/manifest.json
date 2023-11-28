@@ -1,5 +1,5 @@
 {
-  "domain": "gree2-central",
+  "domain": "gree",
   "name": "Gree Central Climate",
   "version": "0.1.0",
   "config_flow": false,
