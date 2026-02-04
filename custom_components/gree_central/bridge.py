@@ -40,6 +40,7 @@ class GreeBridge(object):
         self.devMap = {}
 
         self.start_device_listen()
+        # TODO: 不启用 ake_server 时不执行 self.start_fake_listen()
         self.start_fake_listen()
 
         key = 'gree_central.devices'
@@ -58,7 +59,7 @@ class GreeBridge(object):
             self.key = dic['key']
             self.host = dic['host']
             for item_mac in dic['sub']:
-                self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Climate_' +
+                self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Central ' +
                                                      item_mac, item_mac, self, self.temp_sensor.get(item_mac), self.temp_step)
             self.async_add_devices(self.devMap.values())
             _LOGGER.debug('Load stored dic: {} path:{} devMap:{}'.format(

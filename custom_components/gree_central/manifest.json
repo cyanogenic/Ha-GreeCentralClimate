@@ -2,7 +2,7 @@
   "domain": "gree_central",
   "name": "Gree Central Climate",
   "version": "0.2.0",
-  "config_flow": false,
+  "config_flow": true,
   "documentation": "https://github.com/cyanogenic/Ha-GreeCentralClimate",
   "issue_tracker": "https://github.com/cyanogenic/Ha-GreeCentralClimate/issues",
   "codeowners": [ "@xcy1231", "@cyanogenic" ],
