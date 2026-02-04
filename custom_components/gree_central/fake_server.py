@@ -35,7 +35,7 @@ class FakeServer:
     def heart_beat(self, now):
         for key in self.haMap.keys():
             conn = self.haMap[key]
-            _LOGGER.info('* Server send heart beat to conn: {}'.format(conn))
+            _LOGGER.debug('* Server send heart beat to conn: {}'.format(conn))
             conn.sendall(json.dumps({'t': 'hb'}).encode())
 
     def start(self):
@@ -52,7 +52,7 @@ class FakeServer:
         while self._serving:
             conn, address = self.socket.accept()
             (host, port) = address
-            _LOGGER.info(
+            _LOGGER.debug(
                 '* Server receive connect form {}:{}, connect: {}'.format(host, port, conn))
             # conn.setblocking(False)
             thread = threading.Thread(target=self.receive, args=(conn, host,))
@@ -74,7 +74,7 @@ class FakeServer:
             except BlockingIOError as e:
                 time.sleep(0.5)
             except Exception as e:
-                _LOGGER.info(
+                _LOGGER.debug(
                     '* Connection Exception: {}'.format(e))
                 keep_alive = False
         conn.close()
@@ -100,7 +100,7 @@ class FakeServer:
                   'cid': '',
                   'tcid': msg['mac'],
                   'pack': ciperEncrypt(pack)}
-        _LOGGER.info(
+        _LOGGER.debug(
             '    Discovery request pack: {} answer: {}'.format(pack, answer))
         conn.sendall(json.dumps(answer).encode())
 
@@ -119,7 +119,7 @@ class FakeServer:
                   'cid': '',
                   'tcid': '',
                   'pack': ciperEncrypt(pack)}
-        _LOGGER.info(
+        _LOGGER.debug(
             '    DevLogin request answer: {} pack: {}'.format(answer, pack))
         conn.sendall(json.dumps(answer).encode())
 
@@ -127,14 +127,14 @@ class FakeServer:
         time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         answer = {'t': 'tm',
                   'time': time}
-        _LOGGER.info('    Tm request answer: {}'.format(answer))
+        _LOGGER.debug('    Tm request answer: {}'.format(answer))
         conn.sendall(json.dumps(answer).encode())
 
     def cmd_hb(self, conn):
         answer = {'t': 'hbok'}
         (host, _) = conn.getpeername()
         self.connMap[host] = conn
-        _LOGGER.info('    Hb request answer: {}'.format(answer))
+        _LOGGER.debug('    Hb request answer: {}'.format(answer))
         conn.sendall(json.dumps(answer).encode())
 
     def cmd_pack(self, msg, conn):
@@ -165,7 +165,7 @@ class FakeServer:
                 'Connection from device host: {} is not ready'.format(host))
     
     def cmd_ret(self, conn):
-        _LOGGER.info('    Ret request answer: {}'.format(conn))
+        _LOGGER.debug('    Ret request answer: {}'.format(conn))
         (host, _) = conn.getpeername()
         if host in self.haMap.keys():
             msg = {'t': 'ret'}
@@ -175,7 +175,7 @@ class FakeServer:
     def process(self, data, conn):
         try:
             msg = json.loads(data)
-            _LOGGER.info('  Process: {}'.format(msg))
+            _LOGGER.debug('  Process: {}'.format(msg))
             cmd = msg['t']
             match cmd:
                 case 'dis':
@@ -197,4 +197,4 @@ class FakeServer:
                     self.cmd_ret(conn)
 
         except Exception as e:
-            _LOGGER.info('* Exception: {} on message {}'.format(e, str(data)))
+            _LOGGER.debug('* Exception: {} on message {}'.format(e, str(data)))

@@ -40,9 +40,10 @@ class GreeBridge(object):
         self.devMap = {}
 
         self.start_device_listen()
+        # TODO: 不启用 ake_server 时不执行 self.start_fake_listen()
         self.start_fake_listen()
 
-        key = 'gree2.devices'
+        key = 'gree_central.devices'
         if host != BROADCAST_ADDRESS:
             key = key + '.' + host
         self.store = Store(hass, 1, key)
@@ -58,7 +59,7 @@ class GreeBridge(object):
             self.key = dic['key']
             self.host = dic['host']
             for item_mac in dic['sub']:
-                self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Climate_' +
+                self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Central ' +
                                                      item_mac, item_mac, self, self.temp_sensor.get(item_mac), self.temp_step)
             self.async_add_devices(self.devMap.values())
             _LOGGER.debug('Load stored dic: {} path:{} devMap:{}'.format(
@@ -87,7 +88,7 @@ class GreeBridge(object):
                         socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     self.device_socket.settimeout(30)
                 except:
-                    _LOGGER.debug('creat device socket error')
+                    _LOGGER.error('create device socket error')
                     self.device_socket.close()
                     self.device_socket = None
                     time.sleep(0.5)
@@ -95,8 +96,7 @@ class GreeBridge(object):
             try:
                 data, address = self.device_socket.recvfrom(65535)
             except Exception as e:
-                _LOGGER.debug(
-                    'Device socket received error: {}'.format(str(e)))
+                _LOGGER.error('Device socket received error: {}'.format(str(e)))
                 if self.fake_socket is None:
                     self.reset()
                 continue
@@ -122,7 +122,7 @@ class GreeBridge(object):
                     fake_socket.settimeout(60)
                     fake_socket.connect(('dis.gree.com', 1812))
                 except:
-                    _LOGGER.debug('connect fake server error')
+                    _LOGGER.error('connect fake server error')
                     fake_socket.close()
                     fake_socket = None
                     time.sleep(60)
@@ -136,7 +136,7 @@ class GreeBridge(object):
                 self.fake_socket = None
                 continue
             except Exception as e:
-                _LOGGER.debug('Fake socket received error: {}'.format(str(e)))
+                _LOGGER.error('Fake socket received error: {}'.format(str(e)))
                 self.reset()
                 continue
             self.fc_unready = False
@@ -155,7 +155,7 @@ class GreeBridge(object):
     def process(self, data):
         try:
             msg = json.loads(data)
-            _LOGGER.info('  process data: {} msg: {}'.format(data, msg))
+            _LOGGER.debug('  process data: {} msg: {}'.format(data, msg))
             cmd = msg['t']
             match cmd:
                 case 'hb':
@@ -173,7 +173,7 @@ class GreeBridge(object):
                 case 'res':
                     self.cmd_res(msg)
         except Exception as e:
-            _LOGGER.info(
+            _LOGGER.debug(
                 '* Exception: {} on message {}'.format(e, str(data)))
 
     def scan_broadcast(self):
@@ -201,7 +201,7 @@ class GreeBridge(object):
         self.bind_device()
 
     def bind_device(self):
-        _LOGGER.info('bind_device')
+        _LOGGER.info('bind_device: {}'.format(self.mac))
         message = {
             'mac': self.mac,
             't': 'bind',
@@ -211,10 +211,11 @@ class GreeBridge(object):
 
     def cmd_bind(self, msg):
         self.key = msg['key']
-        _LOGGER.info('cmd_bind ok: {}'.format(self.key))
+        _LOGGER.debug('cmd_bind ok: {}'.format(self.key))
         if len(self.devMap) > 0:
             self.get_all_state(None)
-            self.store.async_delay_save(self.data_to_save, 0)
+            self.hass.loop.call_soon_threadsafe(
+                self.store.async_delay_save, self.data_to_save, 0)
         else:
             self.get_subdevices()
 
@@ -240,8 +241,10 @@ class GreeBridge(object):
             if len(self.devMap) == 0:
                 self.stop_listen()
             else:
-                self.store.async_delay_save(self.data_to_save, 0)
-                self.async_add_devices(self.devMap.values())
+                self.hass.loop.call_soon_threadsafe(
+                    self.store.async_delay_save, self.data_to_save, 0)
+                self.hass.loop.call_soon_threadsafe(
+                    self.async_add_devices, self.devMap.values())
 
     def data_to_save(self):
         return {
@@ -277,7 +280,10 @@ class GreeBridge(object):
     def get_all_state(self, now):
         i = 0
         for climate in self.devMap.values():
-            async_call_later(self.hass, i, climate.syncStatus)
+            # async_call_later(self.hass, i, climate.syncStatus)
+            self.hass.loop.call_soon_threadsafe(
+                async_call_later, self.hass, i, climate.syncStatus
+            )
             i = i + 2
 
     def sync_status(self, data):

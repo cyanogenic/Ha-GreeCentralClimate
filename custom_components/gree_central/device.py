@@ -37,11 +37,11 @@ SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.F
 class Gree2Climate(ClimateEntity):
 
     def __init__(self, hass, name, mac, bridge, temp_sensor, temp_step):
-        _LOGGER.info('Initialize the GREE climate device')
+        _LOGGER.info('Initialize the GREE climate device: {}'.format(mac))
         self.hass = hass
         self.mac = mac
 
-        self._unique_id = 'com.gree2.' + mac
+        self._unique_id = 'com.greecentral.' + mac
 
         self._available = False
 
@@ -171,37 +171,37 @@ class Gree2Climate(ClimateEntity):
         return SUPPORT_FLAGS
 
     def turn_on(self):
-        _LOGGER.info('turn_on(): ')
+        _LOGGER.debug('turn_on(): ')
         # Turn on.
         self.syncState({'Pow': 1})
 
     def turn_off(self):
-        _LOGGER.info('turn_off(): ')
+        _LOGGER.debug('turn_off(): ')
         # Turn on.
         self.syncState({'Pow': 0})
 
     def set_temperature(self, **kwargs):
-        _LOGGER.info('set_temperature(): ' + str(kwargs.get(ATTR_TEMPERATURE)))
+        _LOGGER.debug('set_temperature(): ' + str(kwargs.get(ATTR_TEMPERATURE)))
         # Set new target temperatures.
         if kwargs.get(ATTR_TEMPERATURE) is not None:
             # do nothing if temperature is none
             if not (self._acOptions['Pow'] == 0):
                 # do nothing if HVAC is switched off
-                _LOGGER.info('syncState with SetTem=' +
+                _LOGGER.debug('syncState with SetTem=' +
                              str(kwargs.get(ATTR_TEMPERATURE)))
                 tem, decimal = str(kwargs.get(ATTR_TEMPERATURE)).split('.')
                 self.syncState({'SetTem': int(tem), 'Add0.1': int(decimal)})
 
     def set_fan_mode(self, fan):
-        _LOGGER.info('set_fan_mode(): ' + str(fan))
+        _LOGGER.debug('set_fan_mode(): ' + str(fan))
         # Set the fan mode.
         if not (self._acOptions['Pow'] == 0):
-            _LOGGER.info('Setting normal fan mode to ' +
+            _LOGGER.debug('Setting normal fan mode to ' +
                          str(self._fan_modes.index(fan)))
             self.syncState({'WdSpd': str(self._fan_modes.index(fan))})
 
     def set_hvac_mode(self, hvac_mode):
-        _LOGGER.info('set_hvac_mode(): ' + str(hvac_mode))
+        _LOGGER.debug('set_hvac_mode(): ' + str(hvac_mode))
         # Set new operation mode.
         if (hvac_mode == HVACMode.OFF):
             self.syncState({'Pow': 0})
@@ -210,20 +210,20 @@ class Gree2Climate(ClimateEntity):
                 {'Mod': self._hvac_modes.index(hvac_mode), 'Pow': 1})
 
     def set_preset_mode(self, preset_mode):
-        _LOGGER.info('set_preset_mode(): ' + str(preset_mode))
+        _LOGGER.debug('set_preset_mode(): ' + str(preset_mode))
         # Set the fan mode.
         if self._acOptions['Pow'] == 0:
             return
 
         if preset_mode == PRESET_SLEEP:
-            _LOGGER.info('Setting SwhSlp mode to 1')
+            _LOGGER.debug('Setting SwhSlp mode to 1')
             self.syncState({'SwhSlp': 1, 'Quiet': 1})
             return
 
         self.syncState({'SwhSlp': 0, 'Quiet': 0})
 
     async def async_added_to_hass(self):
-        _LOGGER.info('Gree climate device added to hass()')
+        _LOGGER.info('Gree central climate device added to hass')
         self.syncStatus()
 
     def syncStatus(self, now=None):
@@ -241,17 +241,19 @@ class Gree2Climate(ClimateEntity):
             self._available = True
             for i, val in enumerate(statusPack['cols']):
                 self._acOptions[val] = statusPack['dat'][i]
-            _LOGGER.info('Climate {} status: {}'.format(
+            _LOGGER.debug('Climate {} status: {}'.format(
                 self._name, self._acOptions))
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            if self.entity_id is not None:
+                self.schedule_update_ha_state()
 
     def dealResPack(self, resPack):
         if resPack is not None:
             for i, val in enumerate(resPack['opt']):
                 self._acOptions[val] = resPack['val'][i]
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            if self.entity_id is not None:
+                self.schedule_update_ha_state()
 
     def syncState(self, options):
         commands = []
@@ -275,7 +277,7 @@ class Gree2Climate(ClimateEntity):
             if decimal:
                 tem = tem + int(decimal) * 0.1
         self._target_temperature = tem
-        _LOGGER.info('{} HA target temp set according to HVAC state to: {}'.format(
+        _LOGGER.debug('{} HA target temp set according to HVAC state to: {}'.format(
             self._name, str(tem)))
 
     def UpdateHAHvacMode(self):
@@ -284,7 +286,7 @@ class Gree2Climate(ClimateEntity):
             self._hvac_mode = HVACMode.OFF
         else:
             self._hvac_mode = self._hvac_modes[self._acOptions['Mod']]
-        _LOGGER.info('{} HA operation mode set according to HVAC state to: {}'.format(
+        _LOGGER.debug('{} HA operation mode set according to HVAC state to: {}'.format(
             self._name, str(self._hvac_mode)))
 
     def UpdateHAFanMode(self):
@@ -292,10 +294,10 @@ class Gree2Climate(ClimateEntity):
         index = int(self._acOptions['WdSpd'])
         if index < len(self._fan_modes):
             self._fan_mode = self._fan_modes[int(self._acOptions['WdSpd'])]
-            _LOGGER.info('{} HA fan mode set according to HVAC state to: {}'.format(
+            _LOGGER.debug('{} HA fan mode set according to HVAC state to: {}'.format(
                 self._name, str(self._fan_mode)))
         else:
-            _LOGGER.info('{} HA fan mode set WdSpd to: {}'.format(
+            _LOGGER.debug('{} HA fan mode set WdSpd to: {}'.format(
                 self._name, str(self._acOptions['WdSpd'])))
 
     def UpdateHAStateToCurrentACState(self):
@@ -321,7 +323,7 @@ class Gree2Climate(ClimateEntity):
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]
         new_state = event.data["new_state"]
-        _LOGGER.info('temp_sensor state changed |' + str(entity_id) +
+        _LOGGER.debug('temp_sensor state changed |' + str(entity_id) +
                      '|' + str(old_state) + '|' + str(new_state))
         if new_state is None:
             return
