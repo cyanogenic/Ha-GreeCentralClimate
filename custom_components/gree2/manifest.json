@@ -1,11 +1,11 @@
 {
-  "domain": "gree2",
+  "domain": "gree_central",
   "name": "Gree Central Climate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "config_flow": false,
-  "documentation": "https://github.com/xcy1231/Ha-GreeCentralClimate",
-  "issue_tracker": "https://github.com/xcy1231/Ha-GreeCentralClimate/issues",
-  "codeowners": [
-    "@xcy1231"
-  ]
+  "documentation": "https://github.com/cyanogenic/Ha-GreeCentralClimate",
+  "issue_tracker": "https://github.com/cyanogenic/Ha-GreeCentralClimate/issues",
+  "codeowners": [ "@xcy1231", "@cyanogenic" ],
+  "requirements": ["pycryptodome"],
+  "iot_class": "local_polling"
 }

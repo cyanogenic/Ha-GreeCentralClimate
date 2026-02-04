@@ -12,8 +12,6 @@ from homeassistant.const import (CONF_SCAN_INTERVAL, CONF_HOST)
 from .bridge import GreeBridge
 from .fake_server import FakeServer
 
-REQUIREMENTS = ['pycryptodome']
-
 _LOGGER = logging.getLogger(__name__)
 
 CONF_FAKE_SERVER = 'fake_server'
