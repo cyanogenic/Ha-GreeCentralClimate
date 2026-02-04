@@ -41,7 +41,7 @@ class Gree2Climate(ClimateEntity):
         self.hass = hass
         self.mac = mac
 
-        self._unique_id = 'com.gree2.' + mac
+        self._unique_id = 'com.greecentral.' + mac
 
         self._available = False
 
@@ -244,14 +244,16 @@ class Gree2Climate(ClimateEntity):
             _LOGGER.debug('Climate {} status: {}'.format(
                 self._name, self._acOptions))
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            if self.entity_id is not None:
+                self.schedule_update_ha_state()
 
     def dealResPack(self, resPack):
         if resPack is not None:
             for i, val in enumerate(resPack['opt']):
                 self._acOptions[val] = resPack['val'][i]
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            if self.entity_id is not None:
+                self.schedule_update_ha_state()
 
     def syncState(self, options):
         commands = []
